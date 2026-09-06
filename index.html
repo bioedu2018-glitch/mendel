@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>멘델의 유전 원리 - 분리의 법칙 & 대수의 법칙 웹 앱</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            domYellow: '#FACC15',
+            domYellowDark: '#CA8A04',
+            recGreen: '#4ADE80',
+            recGreenDark: '#16A34A',
+            bgSoft: '#F8FAFC',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes dropIn {
+      0% { transform: translateY(-30px) scale(0.5); opacity: 0; }
+      60% { transform: translateY(10px) scale(1.1); opacity: 1; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .animate-drop {
+      animation: dropIn 0.4s ease-out forwards;
+    }
+    @keyframes shake {
+      0%, 100% { transform: rotate(0deg); }
+      20% { transform: rotate(-8deg); }
+      40% { transform: rotate(8deg); }
+      60% { transform: rotate(-5deg); }
+      80% { transform: rotate(5deg); }
+    }
+    .animate-shake {
+      animation: shake 0.5s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row justify-between items-center gap-2.5">
+      <div class="flex items-center justify-between w-full sm:w-auto gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="bg-amber-100 p-2 rounded-xl text-amber-600 shrink-0">
+            <i class="fa-solid fa-dna text-xl sm:text-2xl"></i>
+          </div>
+          <div>
+            <h1 class="text-base sm:text-xl font-bold text-slate-800 leading-tight">분리의 법칙 바둑돌 유전 모델링</h1>
+            <p class="text-[11px] sm:text-xs text-slate-500">중3 과학 | 멘델의 유전 원리 & 대수의 법칙</p>
+          </div>
+        </div>
+
+        <!-- Mobile QR Code Button -->
+        <button onclick="toggleQrModal(true)" class="sm:hidden px-2.5 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition-all">
+          <i class="fa-solid fa-qrcode text-sm"></i> QR
+        </button>
+      </div>
+
+      <!-- Navigation Tabs & Desktop QR -->
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium flex-1 sm:flex-none">
+          <button id="tabIndividualBtn" onclick="switchTab('individual')" class="flex-1 sm:flex-none px-3.5 sm:px-5 py-2 rounded-lg bg-white shadow-sm text-amber-600 font-semibold transition-all">
+            <i class="fa-solid fa-user mr-1"></i>개별 탐구
+          </button>
+          <button id="tabClassBtn" onclick="switchTab('class')" class="flex-1 sm:flex-none px-3.5 sm:px-5 py-2 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+            <i class="fa-solid fa-users mr-1"></i>학급 통계
+          </button>
+        </div>
+
+        <!-- Desktop QR Button -->
+        <button onclick="toggleQrModal(true)" class="hidden sm:flex px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl text-xs font-bold items-center gap-1.5 transition-all shadow-sm">
+          <i class="fa-solid fa-qrcode text-base"></i> QR 코드
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6 flex-grow w-full">
+
+    <!-- GENETIC LEGEND BAR -->
+    <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 sm:gap-4">
+      <div class="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-700">
+        <i class="fa-solid fa-circle-info text-amber-500 text-sm sm:text-base"></i>
+        <span>유전자 범례:</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-xs">
+        <span class="inline-flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 text-amber-800 font-medium">
+          <span class="w-3 h-3 rounded-full bg-slate-800 border border-slate-600 inline-block"></span>
+          Y (우성, 노란색)
+        </span>
+        <span class="inline-flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 text-emerald-800 font-medium">
+          <span class="w-3 h-3 rounded-full bg-white border border-slate-400 inline-block"></span>
+          y (열성, 초록색)
+        </span>
+        <span class="text-slate-300 hidden sm:inline">|</span>
+        <span class="text-slate-600 font-medium w-full sm:w-auto mt-1 sm:mt-0">어버이: <strong class="text-slate-900">Yy × Yy</strong></span>
+      </div>
+    </div>
+
+    <!-- TAB 1: INDIVIDUAL EXPERIMENT -->
+    <section id="individualTab" class="space-y-4 sm:space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+
+        <!-- Left Column: Bag Simulation Controls -->
+        <div class="lg:col-span-7 space-y-4 sm:space-y-6">
+          <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+            <h2 class="text-sm sm:text-base font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-bag-shopping text-amber-500"></i>
+              어버이 유전자 주머니 (Yy)
+            </h2>
+
+            <!-- Pouches / Bags Display -->
+            <div class="grid grid-cols-2 gap-2.5 sm:gap-4 my-3 sm:my-6">
+              <!-- Bag 1 -->
+              <div id="bag1" class="bg-amber-50/60 border-2 border-dashed border-amber-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-center relative transition-transform">
+                <span class="text-[11px] sm:text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 sm:py-1 rounded-full">부모 1 (Yy)</span>
+                <div class="my-2 sm:my-4 flex justify-center items-center gap-2 sm:gap-3">
+                  <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-900 border-2 border-slate-700 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow">Y</div>
+                  <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white border-2 border-slate-400 flex items-center justify-center text-slate-800 font-bold text-xs sm:text-sm shadow">y</div>
+                </div>
+                <div id="drawnStone1" class="h-10 sm:h-12 flex items-center justify-center">
+                  <span class="text-[11px] sm:text-xs text-slate-400 italic">대기 중...</span>
+                </div>
+              </div>
+
+              <!-- Bag 2 -->
+              <div id="bag2" class="bg-amber-50/60 border-2 border-dashed border-amber-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-center relative transition-transform">
+                <span class="text-[11px] sm:text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 sm:py-1 rounded-full">부모 2 (Yy)</span>
+                <div class="my-2 sm:my-4 flex justify-center items-center gap-2 sm:gap-3">
+                  <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-900 border-2 border-slate-700 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow">Y</div>
+                  <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white border-2 border-slate-400 flex items-center justify-center text-slate-800 font-bold text-xs sm:text-sm shadow">y</div>
+                </div>
+                <div id="drawnStone2" class="h-10 sm:h-12 flex items-center justify-center">
+                  <span class="text-[11px] sm:text-xs text-slate-400 italic">대기 중...</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Combination Result Banner -->
+            <div id="resultBanner" class="bg-slate-100 rounded-xl p-3 sm:p-4 text-center border border-slate-200 min-h-[72px] sm:min-h-[88px] flex flex-col justify-center items-center">
+              <span class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">최근 추출 결과 (잡종 2세대)</span>
+              <div id="resultText" class="text-xs sm:text-lg font-bold text-slate-700">
+                버튼을 눌러 바둑돌을 무작위로 추출해 보세요.
+              </div>
+            </div>
+
+            <!-- Simulation Buttons -->
+            <div class="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-6">
+              <button onclick="runSimulation(1)" class="py-2.5 sm:py-3 px-2 sm:px-4 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold rounded-xl shadow transition-all active:scale-95 text-xs sm:text-base flex flex-col sm:flex-row items-center justify-center gap-1">
+                <i class="fa-solid fa-hand-pointer"></i> 1회
+              </button>
+              <button onclick="runSimulation(10)" class="py-2.5 sm:py-3 px-2 sm:px-4 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold rounded-xl shadow transition-all active:scale-95 text-xs sm:text-base flex flex-col sm:flex-row items-center justify-center gap-1">
+                <i class="fa-solid fa-angles-right"></i> 10회
+              </button>
+              <button onclick="runSimulation(100)" class="py-2.5 sm:py-3 px-2 sm:px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-xl shadow transition-all active:scale-95 text-xs sm:text-base flex flex-col sm:flex-row items-center justify-center gap-1">
+                <i class="fa-solid fa-bolt"></i> 100회
+              </button>
+            </div>
+
+            <div class="mt-3 sm:mt-4 flex justify-end">
+              <button onclick="resetIndividualData()" class="text-xs text-rose-500 hover:text-rose-700 underline font-medium flex items-center gap-1 py-1">
+                <i class="fa-solid fa-rotate-right"></i> 개별 데이터 초기화
+              </button>
+            </div>
+          </div>
+
+          <!-- Google Sheet One-Touch Submission Card -->
+          <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex justify-between items-center mb-2 sm:mb-3">
+              <h2 class="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-paper-plane text-emerald-500"></i>
+                학급 전체 데이터 전송
+              </h2>
+              <button onclick="toggleSettingsModal(true)" class="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                <i class="fa-solid fa-gear"></i> 설정
+              </button>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">이름만 입력해두면 [전송하기] 버튼을 누르는 즉시 구글 시트로 전송됩니다.</p>
+
+            <div class="space-y-2.5">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">학생 / 모둠 이름</label>
+                <input type="text" id="studentNameInput" placeholder="예: 3학년 1반 2모둠" oninput="saveStudentInfo()" class="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+              </div>
+
+              <button id="submitBtn" onclick="submitToClassData()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all active:scale-98 text-sm sm:text-base flex items-center justify-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up"></i> 학급 결과에 전송하기
+              </button>
+              
+              <div id="submitStatus" class="text-center text-xs font-medium min-h-[18px]"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Individual Statistics -->
+        <div class="lg:col-span-5 space-y-4 sm:space-y-6">
+          <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm h-full flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center mb-3 sm:mb-4">
+                <h2 class="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+                  <i class="fa-solid fa-chart-pie text-amber-500"></i>
+                  개별 통계 결과
+                </h2>
+                <span class="text-xs font-bold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200">
+                  총: <span id="indTotalCount" class="text-amber-600 font-extrabold">0</span>회
+                </span>
+              </div>
+
+              <!-- Phenotype Summary Cards -->
+              <div class="grid grid-cols-2 gap-2.5 sm:gap-3 mb-4 sm:mb-6">
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-center">
+                  <span class="text-[11px] sm:text-xs text-amber-800 font-semibold block mb-0.5">🟡 노란색 (우성)</span>
+                  <div class="text-lg sm:text-xl font-extrabold text-amber-900" id="indYellowCount">0</div>
+                  <div class="text-[10px] sm:text-xs text-amber-700 font-medium" id="indYellowRatio">(0%)</div>
+                </div>
+                <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-center">
+                  <span class="text-[11px] sm:text-xs text-emerald-800 font-semibold block mb-0.5">🟢 초록색 (열성)</span>
+                  <div class="text-lg sm:text-xl font-extrabold text-emerald-900" id="indGreenCount">0</div>
+                  <div class="text-[10px] sm:text-xs text-emerald-700 font-medium" id="indGreenRatio">(0%)</div>
+                </div>
+              </div>
+
+              <!-- Genotype Table -->
+              <div class="overflow-hidden border border-slate-200 rounded-xl mb-4 sm:mb-6">
+                <table class="w-full text-xs text-left text-slate-600">
+                  <thead class="bg-slate-100 text-slate-700 uppercase font-bold text-[10px] sm:text-[11px]">
+                    <tr>
+                      <th class="px-2.5 sm:px-3 py-2">유전자형</th>
+                      <th class="px-2.5 sm:px-3 py-2">표현형</th>
+                      <th class="px-2.5 sm:px-3 py-2 text-right">개수</th>
+                      <th class="px-2.5 sm:px-3 py-2 text-right">비율</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200 font-medium">
+                    <tr>
+                      <td class="px-2.5 sm:px-3 py-2 font-bold text-slate-800">YY</td>
+                      <td class="px-2.5 sm:px-3 py-2 text-amber-600">노란색</td>
+                      <td class="px-2.5 sm:px-3 py-2 text-right font-bold" id="indYYCount">0</td>
+                      <td class="px-2.5 sm:px-3 py-2 text-right text-slate-400" id="indYYRatio">0%</td>
+                    </tr>
+                    <tr>
+                      <td class="px-2.5 sm:px-3 py-2 font-bold text-slate-800">Yy</td>
+                      <td class="px-2.5 sm:px-3 py-2 text-amber-600">노란색</td>
+                      <td class="px-2.5 sm:px-3 py-2 text-right font-bold" id="indYyCount">0</td>
+                      <td class="px-2.5 sm:px-3 py-2 text-right text-slate-400" id="indYyRatio">0%</td>
+                    </tr>
+                    <tr>
+                      <td class="px-2.5 sm:px-3 py-2 font-bold text-slate-800">yy</td>
+                      <td class="px-2.5 sm:px-3 py-2 text-emerald-600">초록색</td>
+                      <td class="px-2.5 sm:px-3 py-2 text-right font-bold" id="indyyCount">0</td>
+                      <td class="px-2.5 sm:px-3 py-2 text-right text-slate-400" id="indyyRatio">0%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Individual Chart -->
+              <div class="relative h-40 sm:h-48 w-full">
+                <canvas id="individualChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Ratio Summary Badge -->
+            <div class="mt-3 sm:mt-4 pt-2.5 border-t border-slate-100 text-center">
+              <p class="text-xs text-slate-500">
+                표현형 비율 (노란색 : 초록색) =
+                <strong id="indPhenoRatio" class="text-slate-800 font-bold">0 : 0</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 2: CLASS STATISTICS -->
+    <section id="classTab" class="space-y-6 hidden">
+      <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6 pb-3 border-b border-slate-100">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-users-viewfinder text-indigo-500"></i>
+              학급 전체 데이터 집계 및 대수의 법칙
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">학급 전체 표본이 누적될수록 3 : 1 비율에 수렴하는지 확인합니다.</p>
+          </div>
+          <button onclick="fetchClassData()" class="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm shadow flex items-center justify-center gap-2 transition-all">
+            <i class="fa-solid fa-arrows-rotate"></i> 학급 데이터 새로고침
+          </button>
+        </div>
+
+        <!-- Class Overall Summary Cards -->
+        <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+          <div class="bg-slate-50 p-2.5 sm:p-4 rounded-xl border border-slate-200 text-center">
+            <span class="text-[10px] sm:text-xs text-slate-500 font-medium block mb-0.5">전체 총 시행</span>
+            <div class="text-lg sm:text-3xl font-black text-slate-800" id="classTotalN">0</div>
+            <span class="text-[9px] sm:text-[11px] text-slate-400 hidden sm:inline">표본 크기 N</span>
+          </div>
+          <div class="bg-amber-50/80 p-2.5 sm:p-4 rounded-xl border border-amber-200 text-center">
+            <span class="text-[10px] sm:text-xs text-amber-800 font-semibold block mb-0.5">🟡 노란색 콩</span>
+            <div class="text-lg sm:text-3xl font-black text-amber-700" id="classYellowTotal">0</div>
+            <span class="text-[10px] sm:text-xs text-amber-800 font-bold" id="classYellowPercent">0%</span>
+          </div>
+          <div class="bg-emerald-50/80 p-2.5 sm:p-4 rounded-xl border border-emerald-200 text-center">
+            <span class="text-[10px] sm:text-xs text-emerald-800 font-semibold block mb-0.5">🟢 초록색 콩</span>
+            <div class="text-lg sm:text-3xl font-black text-emerald-700" id="classGreenTotal">0</div>
+            <span class="text-[10px] sm:text-xs text-emerald-800 font-bold" id="classGreenPercent">0%</span>
+          </div>
+        </div>
+
+        <!-- Law of Large Numbers Visual Bar -->
+        <div class="mb-6 bg-slate-50 p-3.5 sm:p-5 rounded-2xl border border-slate-200">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs sm:text-sm font-bold text-slate-700">표현형 비율 수렴 상태 (이론값 3 : 1 = 75% : 25%)</span>
+            <span class="text-xs sm:text-sm font-extrabold text-indigo-600" id="classRatioText">0 : 0</span>
+          </div>
+          
+          <!-- Stacked Bar -->
+          <div class="w-full h-7 sm:h-8 bg-slate-200 rounded-full overflow-hidden flex border border-slate-300 shadow-inner">
+            <div id="barYellow" class="bg-amber-400 h-full flex items-center justify-center text-[11px] sm:text-xs font-bold text-amber-950 transition-all duration-500" style="width: 50%;">
+              노란색
+            </div>
+            <div id="barGreen" class="bg-emerald-400 h-full flex items-center justify-center text-[11px] sm:text-xs font-bold text-emerald-950 transition-all duration-500" style="width: 50%;">
+              초록색
+            </div>
+          </div>
+
+          <!-- Theoretical Marker -->
+          <div class="relative w-full h-5 mt-1">
+            <div class="absolute left-[75%] -translate-x-1/2 top-0 flex flex-col items-center">
+              <span class="w-0.5 h-3 bg-rose-500"></span>
+              <span class="text-[9px] sm:text-[10px] font-bold text-rose-600">이론상 3:1 (75%)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Law of Large Numbers Explanation Banner -->
+        <div id="llnMessage" class="p-3 sm:p-4 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs sm:text-sm leading-relaxed mb-6 flex items-start gap-2.5">
+          <i class="fa-solid fa-graduation-cap text-indigo-600 text-lg sm:text-xl mt-0.5 shrink-0"></i>
+          <div>
+            <strong class="font-bold block mb-0.5 text-indigo-950">💡 대수의 법칙(Law of Large Numbers)</strong>
+            <span>시행 횟수가 적으면 3:1 비율에서 벗어날 수 있지만, 학급 전체 데이터를 모을수록 이론적 확률인 <strong class="underline decoration-indigo-400">3 : 1 (노란색 75% : 초록색 25%)</strong>에 더욱 정밀하게 수렴하게 됩니다.</span>
+          </div>
+        </div>
+
+        <!-- Class Charts Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-700 mb-2 text-center">학급 유전자형 분포 (YY : Yy : yy)</h3>
+            <div class="h-44 sm:h-56 relative">
+              <canvas id="classGenotypeChart"></canvas>
+            </div>
+          </div>
+          <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-700 mb-2 text-center">학급 표현형 비율 (노란색 : 초록색)</h3>
+            <div class="h-44 sm:h-56 relative">
+              <canvas id="classPhenotypeChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- QR CODE MODAL FOR QUICK ACCESS -->
+  <div id="qrModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-qrcode text-amber-500"></i>
+          스마트폰 바로가기 QR 코드
+        </h3>
+        <button onclick="toggleQrModal(false)" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500">
+        학생들이 스마트폰 카메라로 이 QR 코드를 스캔하면 시뮬레이터 웹앱에 바로 접속할 수 있습니다.
+      </p>
+
+      <div class="flex justify-center p-3 bg-slate-50 rounded-2xl border border-slate-200">
+        <img id="qrCodeImg" src="" alt="QR Code" class="w-48 h-48 rounded-lg shadow-sm">
+      </div>
+
+      <div class="text-[11px] text-slate-400 truncate px-2" id="currentUrlText"></div>
+
+      <button onclick="toggleQrModal(false)" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold">
+        닫기
+      </button>
+    </div>
+  </div>
+
+  <!-- GAS Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-gear text-emerald-500"></i>
+          구글 시트 연동 설정
+        </h3>
+        <button onclick="toggleSettingsModal(false)" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Google Apps Script Web App URL</label>
+          <input type="url" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:outline-none font-mono text-xs">
+          <p class="text-[11px] text-slate-400 mt-1">선생님께서 제공해 주신 연동 URL을 입력하면 자동 저장됩니다.</p>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center pt-2">
+        <button onclick="toggleGasModal(true); toggleSettingsModal(false)" class="text-xs text-indigo-600 hover:underline">
+          <i class="fa-solid fa-book mr-1"></i>구글 시트 연동 가이드
+        </button>
+        <button onclick="saveGasUrlSettings()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs">
+          저장하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAS Guide Modal -->
+  <div id="gasModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-book text-indigo-500"></i>
+          구글 시트 연동 5단계 가이드
+        </h3>
+        <button onclick="toggleGasModal(false)" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <strong class="text-slate-800 font-bold block mb-1">1. 구글 스프레드시트 만들기</strong>
+          <p>새 구글 시트를 만들고 1행(헤더)에 순서대로 입력합니다:<br>
+          <code class="bg-white px-1 py-0.5 rounded border border-slate-200 text-amber-700 font-mono text-[11px]">이름 | YY | Yy | yy | 노란색 | 초록색 | 총횟수 | 일시</code></p>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <strong class="text-slate-800 font-bold block mb-1">2. Apps Script 열기</strong>
+          <p>상단 메뉴 [확장 프로그램] ➔ [Apps Script]를 클릭합니다.</p>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <strong class="text-slate-800 font-bold block mb-1">3. Code.gs 붙여넣기</strong>
+          <p>제공된 Apps Script (<code class="font-mono">Code.gs</code>) 코드를 에디터에 전체 붙여넣고 저장(Ctrl+S)합니다.</p>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <strong class="text-slate-800 font-bold block mb-1">4. 웹 앱 배포하기</strong>
+          <p>우측 상단 [배포] ➔ [새 배포] ➔ 유형: <strong>웹 앱</strong><br>
+          - 실행 수행자: <strong>나 (Me)</strong><br>
+          - 액세스 권한: <strong>모든 사용자 (Anyone)</strong> 설정 후 배포 클릭!</p>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <strong class="text-slate-800 font-bold block mb-1">5. URL 등록하기</strong>
+          <p>발급된 웹 앱 URL (<code class="font-mono">https://script.google.com/macros/s/.../exec</code>)을 복사하여 본 앱의 [설정] 창에 입력하세요.</p>
+        </div>
+      </div>
+
+      <button onclick="toggleGasModal(false)" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow">
+        확인 완료
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+    <div class="max-w-6xl mx-auto px-4 text-center text-xs text-slate-400 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <p>© 중학교 과학 3학년 교육용 탐구 콘텐츠 | 멘델의 분리의 법칙 시뮬레이터</p>
+      <button onclick="toggleGasModal(true)" class="text-indigo-600 hover:text-indigo-800 underline font-medium">
+        <i class="fa-solid fa-gear mr-1"></i>구글 시트 연동 설정 가이드
+      </button>
+    </div>
+  </footer>
+
+  <!-- APP LOGIC & JAVASCRIPT -->
+  <script>
+    // State Management for Individual Experiment
+    const indData = {
+      YY: 0,
+      Yy: 0,
+      yy: 0,
+      yellow: 0,
+      green: 0,
+      total: 0
+    };
+
+    // Chart Instances
+    let indChartInstance = null;
+    let classGenoChartInstance = null;
+    let classPhenoChartInstance = null;
+
+    // DOM Elements
+    const drawnStone1 = document.getElementById('drawnStone1');
+    const drawnStone2 = document.getElementById('drawnStone2');
+    const resultText = document.getElementById('resultText');
+    const bag1 = document.getElementById('bag1');
+    const bag2 = document.getElementById('bag2');
+
+    // Tab Switching Function
+    function switchTab(tab) {
+      const indTab = document.getElementById('individualTab');
+      const clsTab = document.getElementById('classTab');
+      const indBtn = document.getElementById('tabIndividualBtn');
+      const clsBtn = document.getElementById('tabClassBtn');
+
+      if (tab === 'individual') {
+        indTab.classList.remove('hidden');
+        clsTab.classList.add('hidden');
+        
+        indBtn.className = "flex-1 sm:flex-none px-3.5 sm:px-5 py-2 rounded-lg bg-white shadow-sm text-amber-600 font-semibold transition-all";
+        clsBtn.className = "flex-1 sm:flex-none px-3.5 sm:px-5 py-2 rounded-lg text-slate-600 hover:text-slate-900 transition-all";
+      } else {
+        indTab.classList.add('hidden');
+        clsTab.classList.remove('hidden');
+
+        clsBtn.className = "flex-1 sm:flex-none px-3.5 sm:px-5 py-2 rounded-lg bg-white shadow-sm text-indigo-600 font-semibold transition-all";
+        indBtn.className = "flex-1 sm:flex-none px-3.5 sm:px-5 py-2 rounded-lg text-slate-600 hover:text-slate-900 transition-all";
+      }
+    }
+
+    // Random Allele Drawing Function
+    function drawAllele() {
+      return Math.random() < 0.5 ? 'Y' : 'y';
+    }
+
+    // Run Simulation (1, 10, or 100 iterations)
+    function runSimulation(count) {
+      if (count === 1) {
+        bag1.classList.add('animate-shake');
+        bag2.classList.add('animate-shake');
+
+        setTimeout(() => {
+          bag1.classList.remove('animate-shake');
+          bag2.classList.remove('animate-shake');
+
+          const a1 = drawAllele();
+          const a2 = drawAllele();
+          renderStoneVisual(a1, a2);
+          processResult(a1, a2, true);
+        }, 200);
+      } else {
+        let lastA1 = 'Y', lastA2 = 'Y';
+        for (let i = 0; i < count; i++) {
+          lastA1 = drawAllele();
+          lastA2 = drawAllele();
+          processResult(lastA1, lastA2, false);
+        }
+        renderStoneVisual(lastA1, lastA2);
+        updateIndividualUI();
+      }
+    }
+
+    // Page Load Setup
+    window.addEventListener('DOMContentLoaded', () => {
+      initIndividualChart();
+      initClassCharts();
+      updateIndividualUI();
+      loadSavedInfo();
+    });
+
+    // Load Saved Student Info & GAS URL from LocalStorage
+    function loadSavedInfo() {
+      const savedName = localStorage.getItem('mendel_student_name') || '';
+      const savedUrl = localStorage.getItem('mendel_gas_url') || '';
+      if (savedName) document.getElementById('studentNameInput').value = savedName;
+      if (savedUrl) document.getElementById('gasUrlInput').value = savedUrl;
+    }
+
+    function saveStudentInfo() {
+      const name = document.getElementById('studentNameInput').value.trim();
+      localStorage.setItem('mendel_student_name', name);
+    }
+
+    function saveGasUrlSettings() {
+      const url = document.getElementById('gasUrlInput').value.trim();
+      localStorage.setItem('mendel_gas_url', url);
+      toggleSettingsModal(false);
+      const statusEl = document.getElementById('submitStatus');
+      statusEl.className = "text-center text-xs font-medium text-emerald-600";
+      statusEl.innerText = "구글 시트 연동 URL이 저장되었습니다.";
+      setTimeout(() => statusEl.innerText = "", 3000);
+    }
+
+    // Modal Toggles
+    function toggleQrModal(show) {
+      const modal = document.getElementById('qrModal');
+      if (show) {
+        const currentUrl = window.location.href;
+        document.getElementById('currentUrlText').innerText = currentUrl;
+        document.getElementById('qrCodeImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentUrl)}`;
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function toggleSettingsModal(show) {
+      const modal = document.getElementById('settingsModal');
+      if (show) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    }
+
+    function toggleGasModal(show) {
+      const modal = document.getElementById('gasModal');
+      if (show) modal.classList.remove('hidden');
+      else modal.classList.add('hidden');
+    }
+
+    // Single Draw Function (Returns 'Y' or 'y')
+    // Submit Data to Google Sheets (One-Touch)
+    async function submitToClassData() {
+      const name = document.getElementById('studentNameInput').value.trim();
+      let url = document.getElementById('gasUrlInput').value.trim();
+
+      if (!url) {
+        url = localStorage.getItem('mendel_gas_url') || '';
+      }
+
+      const statusEl = document.getElementById('submitStatus');
+
+      if (!name) {
+        statusEl.className = "text-center text-xs font-medium text-rose-500";
+        statusEl.innerText = "⚠️ 학생 또는 모둠 이름을 입력해 주세요.";
+        return;
+      }
+      if (indData.total === 0) {
+        statusEl.className = "text-center text-xs font-medium text-rose-500";
+        statusEl.innerText = "⚠️ 바둑돌 추출 실험을 1회 이상 진행해 주세요.";
+        return;
+      }
+      if (!url) {
+        toggleSettingsModal(true);
+        statusEl.className = "text-center text-xs font-medium text-amber-600";
+        statusEl.innerText = "⚠️ 구글 시트 Web App URL을 설정해 주세요.";
+        return;
+      }
+
+      // Save credentials for seamless future clicks
+      localStorage.setItem('mendel_student_name', name);
+      localStorage.setItem('mendel_gas_url', url);
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-75');
+      statusEl.className = "text-center text-xs font-medium text-indigo-600 animate-pulse";
+      statusEl.innerText = "⏳ 학급 구글 시트로 전송 중...";
+
+      const payload = {
+        name: name,
+        YY: indData.YY,
+        Yy: indData.Yy,
+        yy: indData.yy,
+        yellow: indData.yellow,
+        green: indData.green,
+        total: indData.total
+      };
+
+      try {
+        await fetch(url, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        statusEl.className = "text-center text-xs font-bold text-emerald-600";
+        statusEl.innerText = "✅ 전송 성공! 학급 데이터에 추가되었습니다.";
+      } catch (err) {
+        console.error(err);
+        statusEl.className = "text-center text-xs font-medium text-rose-500";
+        statusEl.innerText = "❌ 전송 실패: URL을 확인하거나 다시 시도해 주세요.";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-75');
+      }
+    }
+
+    // Process Result Logic
+    function processResult(a1, a2, updateUI = true) {
+      // Standardize Genotype Order (e.g. 'yY' -> 'Yy')
+      let genotype = a1 + a2;
+      if (genotype === 'yY') genotype = 'Yy';
+
+      indData[genotype]++;
+      indData.total++;
+
+      if (genotype === 'YY' || genotype === 'Yy') {
+        indData.yellow++;
+      } else {
+        indData.green++;
+      }
+
+      if (updateUI) {
+        updateIndividualUI();
+      }
+    }
+
+    // Visual Render for Single Draw
+    function renderStoneVisual(a1, a2) {
+      const renderStone = (allele) => {
+        if (allele === 'Y') {
+          return `<div class="w-10 h-10 rounded-full bg-slate-900 border-2 border-slate-700 flex items-center justify-center text-white font-bold text-sm shadow-lg animate-drop">Y</div>`;
+        } else {
+          return `<div class="w-10 h-10 rounded-full bg-white border-2 border-slate-400 flex items-center justify-center text-slate-800 font-bold text-sm shadow-lg animate-drop">y</div>`;
+        }
+      };
+
+      drawnStone1.innerHTML = renderStone(a1);
+      drawnStone2.innerHTML = renderStone(a2);
+
+      let geno = a1 + a2;
+      if (geno === 'yY') geno = 'Yy';
+
+      let phenoText = (geno === 'yy') ? '🟢 초록색 콩 (열성)' : '🟡 노란색 콩 (우성)';
+      let phenoColor = (geno === 'yy') ? 'text-emerald-600' : 'text-amber-600';
+
+      resultText.innerHTML = `
+        <span>유전자형: <strong class="underline">${geno}</strong></span>
+        <span class="mx-2">|</span>
+        <span class="${phenoColor}">표현형: <strong>${phenoText}</strong></span>
+      `;
+    }
+
+    // Update Individual UI
+    function updateIndividualUI() {
+      document.getElementById('indTotalCount').innerText = indData.total;
+      document.getElementById('indYellowCount').innerText = indData.yellow;
+      document.getElementById('indGreenCount').innerText = indData.green;
+
+      const yPct = indData.total > 0 ? ((indData.yellow / indData.total) * 100).toFixed(1) : 0;
+      const gPct = indData.total > 0 ? ((indData.green / indData.total) * 100).toFixed(1) : 0;
+
+      document.getElementById('indYellowRatio').innerText = `(${yPct}%)`;
+      document.getElementById('indGreenRatio').innerText = `(${gPct}%)`;
+
+      document.getElementById('indYYCount').innerText = indData.YY;
+      document.getElementById('indYyCount').innerText = indData.Yy;
+      document.getElementById('indyyCount').innerText = indData.yy;
+
+      document.getElementById('indYYRatio').innerText = indData.total > 0 ? ((indData.YY / indData.total) * 100).toFixed(1) + '%' : '0%';
+      document.getElementById('indYyRatio').innerText = indData.total > 0 ? ((indData.Yy / indData.total) * 100).toFixed(1) + '%' : '0%';
+      document.getElementById('indyyRatio').innerText = indData.total > 0 ? ((indData.yy / indData.total) * 100).toFixed(1) + '%' : '0%';
+
+      // Ratio Text Calculation
+      if (indData.green === 0) {
+        document.getElementById('indPhenoRatio').innerText = `${indData.yellow} : 0`;
+      } else {
+        const ratio = (indData.yellow / indData.green).toFixed(2);
+        document.getElementById('indPhenoRatio').innerText = `${ratio} : 1`;
+      }
+
+      // Update Chart
+      if (indChartInstance) {
+        indChartInstance.data.datasets[0].data = [indData.YY, indData.Yy, indData.yy];
+        indChartInstance.update();
+      }
+    }
+
+    // Reset Individual Data
+    function resetIndividualData() {
+      indData.YY = 0;
+      indData.Yy = 0;
+      indData.yy = 0;
+      indData.yellow = 0;
+      indData.green = 0;
+      indData.total = 0;
+
+      drawnStone1.innerHTML = `<span class="text-xs text-slate-400 italic">뽑기 대기 중...</span>`;
+      drawnStone2.innerHTML = `<span class="text-xs text-slate-400 italic">뽑기 대기 중...</span>`;
+      resultText.innerHTML = `버튼을 눌러 바둑돌을 무작위로 추출해 보세요.`;
+
+      updateIndividualUI();
+    }
+
+    // Initialize Individual Chart
+    function initIndividualChart() {
+      const ctx = document.getElementById('individualChart').getContext('2d');
+      indChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['YY (노랑)', 'Yy (노랑)', 'yy (초록)'],
+          datasets: [{
+            label: '개수',
+            data: [0, 0, 0],
+            backgroundColor: ['#FACC15', '#FBBF24', '#4ADE80'],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+    }
+
+    // Initialize Class Charts
+    function initClassCharts() {
+      // Genotype Bar Chart
+      const ctxG = document.getElementById('classGenotypeChart').getContext('2d');
+      classGenoChartInstance = new Chart(ctxG, {
+        type: 'bar',
+        data: {
+          labels: ['YY', 'Yy', 'yy'],
+          datasets: [{
+            label: '학급 유전자형 합계',
+            data: [0, 0, 0],
+            backgroundColor: ['#EAB308', '#F59E0B', '#22C55E'],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      // Phenotype Doughnut Chart
+      const ctxP = document.getElementById('classPhenotypeChart').getContext('2d');
+      classPhenoChartInstance = new Chart(ctxP, {
+        type: 'doughnut',
+        data: {
+          labels: ['노란색 콩 (우성)', '초록색 콩 (열성)'],
+          datasets: [{
+            data: [0, 0],
+            backgroundColor: ['#FACC15', '#4ADE80']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+
+    // Submit Data to Google Sheets
+    async function submitToClassData() {
+      const name = document.getElementById('studentNameInput').value.trim();
+      const url = document.getElementById('gasUrlInput').value.trim();
+
+      if (!name) {
+        alert('모둠 이름 또는 학생 이름을 입력해 주세요.');
+        return;
+      }
+      if (indData.total === 0) {
+        alert('실험을 최소 1회 이상 진행한 후 제출해 주세요.');
+        return;
+      }
+      if (!url) {
+        alert('Google Apps Script Web App URL을 입력해 주세요.');
+        return;
+      }
+
+      const payload = {
+        name: name,
+        YY: indData.YY,
+        Yy: indData.Yy,
+        yy: indData.yy,
+        yellow: indData.yellow,
+        green: indData.green,
+        total: indData.total
+      };
+
+      try {
+        // Send POST request
+        await fetch(url, {
+          method: 'POST',
+          mode: 'no-cors', // For Google Apps Script CORS Handling
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        alert('성공적으로 학급 구글 시트에 제출되었습니다!');
+      } catch (err) {
+        console.error(err);
+        alert('데이터 전송 실패: URL을 확인하거나 네트워크 상태를 체크하세요.');
+      }
+    }
+
+    // Fetch Class Aggregate Data
+    async function fetchClassData() {
+      const url = document.getElementById('gasUrlInput').value.trim();
+
+      if (!url) {
+        alert('학급 데이터를 불러오려면 Google Apps Script Web App URL이 필요합니다.');
+        return;
+      }
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data && data.status === 'success') {
+          renderClassUI(data.summary);
+        } else {
+          alert('데이터를 제대로 불러오지 못했습니다.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('학급 데이터를 가져오는 중 오류가 발생했습니다. (Web App GET 설정 확인 필요)');
+      }
+    }
+
+    // Render Class Aggregate UI
+    function renderClassUI(summary) {
+      const { YY, Yy, yy, yellow, green, total } = summary;
+
+      document.getElementById('classTotalN').innerText = total.toLocaleString();
+      document.getElementById('classYellowTotal').innerText = yellow.toLocaleString();
+      document.getElementById('classGreenTotal').innerText = green.toLocaleString();
+
+      const yellowPct = total > 0 ? ((yellow / total) * 100).toFixed(1) : 0;
+      const greenPct = total > 0 ? ((green / total) * 100).toFixed(1) : 0;
+
+      document.getElementById('classYellowPercent').innerText = `${yellowPct}%`;
+      document.getElementById('classGreenPercent').innerText = `${greenPct}%`;
+
+      // Update Bar Widths
+      document.getElementById('barYellow').style.width = `${yellowPct}%`;
+      document.getElementById('barGreen').style.width = `${greenPct}%`;
+      document.getElementById('barYellow').innerText = `노란색 (${yellowPct}%)`;
+      document.getElementById('barGreen').innerText = `초록색 (${greenPct}%)`;
+
+      // Ratio Display
+      if (green === 0) {
+        document.getElementById('classRatioText').innerText = `${yellow} : 0`;
+      } else {
+        const ratio = (yellow / green).toFixed(2);
+        document.getElementById('classRatioText').innerText = `${ratio} : 1`;
+      }
+
+      // Update Charts
+      if (classGenoChartInstance) {
+        classGenoChartInstance.data.datasets[0].data = [YY, Yy, yy];
+        classGenoChartInstance.update();
+      }
+
+      if (classPhenoChartInstance) {
+        classPhenoChartInstance.data.datasets[0].data = [yellow, green];
+        classPhenoChartInstance.update();
+      }
+    }
+  </script>
+</body>
+</html>
